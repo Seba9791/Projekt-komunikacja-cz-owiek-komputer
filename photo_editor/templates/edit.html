@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Edytuj zdjęcie</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 200px;
+        }
+        .slider-label {
+            margin-bottom: 5px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Edytuj swoje zdjęcie</h1>
+        <div class="text-center mt-4">
+            <img id="image" src="{{ url_for('static', filename='uploads/' ~ filename) }}" alt="Zdjęcie" class="img-fluid">
+        </div>
+        <div class="text-center mt-4">
+            <button id="startCropButton" class="btn btn-primary">Kadruj</button>
+            <button id="saveCropButton" class="btn btn-success" style="display:none;">Zapisz kadrowanie</button>
+        </div>
+
+        <form id="cropForm" action="" method="post">
+            <input type="hidden" name="action" value="crop_interactive">
+            <input type="hidden" name="x" id="cropX">
+            <input type="hidden" name="y" id="cropY">
+            <input type="hidden" name="width" id="cropWidth">
+            <input type="hidden" name="height" id="cropHeight">
+        </form>
+
+        <form action="" method="post" class="mt-4">
+            <input type="hidden" name="action" value="save_draft">
+            <div class="form-group">
+                <label for="draft_name">Nazwa wersji roboczej:</label>
+                <input type="text" name="draft_name" id="draft_name" required class="form-control">
+            </div>
+            <button type="submit" class="btn btn-info">Zapisz wersję roboczą</button>
+        </form>
+
+        <form action="" method="post" class="mt-4">
+            <button type="submit" name="action" value="grayscale" class="btn btn-dark">Czarno-białe</button>
+            <button type="submit" name="action" value="contour" class="btn btn-secondary">Kontur</button>
+            <button type="submit" name="action" value="detail" class="btn btn-info">Szczegóły</button>
+            <button type="submit" name="action" value="edge_enhance" class="btn btn-warning">Wzmocnienie krawędzi</button>
+            <button type="submit" name="action" value="emboss" class="btn btn-light">Wytłoczenie</button>
+            <button type="submit" name="action" value="undo" class="btn btn-danger">Cofnij</button>
+        </form>
+
+        <h2 class="mt-5">Dostosuj filtry za pomocą suwaków</h2>
+
+        <div class="slider-container mt-3">
+            <div class="form-group">
+                <label for="blur">Intensywność rozmycia: <span id="blurValue">1</span></label>
+                <input type="range" min="0" max="10" step="0.1" value="1" id="blur" class="form-control-range" oninput="updateSliderValue('blur', 'blurValue')" onchange="submitSliderForm('blur', 'blur')">
+            </div>
+            <div class="form-group">
+                <label for="sharpen">Intensywność wyostrzenia: <span id="sharpenValue">1</span></label>
+                <input type="range" min="0" max="2" step="0.1" value="1" id="sharpen" class="form-control-range" oninput="updateSliderValue('sharpen', 'sharpenValue')" onchange="submitSliderForm('sharpen', 'sharpen')">
+            </div>
+            <div class="form-group">
+                <label for="brightness">Jasność: <span id="brightnessValue">1</span></label>
+                <input type="range" min="0.0" max="2.0" step="0.1" value="1" id="brightness" class="form-control-range" oninput="updateSliderValue('brightness', 'brightnessValue')" onchange="submitSliderForm('brightness', 'brightness')">
+            </div>
+            <div class="form-group">
+                <label for="contrast">Kontrast: <span id="contrastValue">1</span></label>
+                <input type="range" min="0.0" max="2.0" step="0.1" value="1" id="contrast" class="form-control-range" oninput="updateSliderValue('contrast', 'contrastValue')" onchange="submitSliderForm('contrast', 'contrast')">
+            </div>
+            <div class="form-group">
+                <label for="saturation">Nasycenie: <span id="saturationValue">1</span></label>
+                <input type="range" min="0.0" max="2.0" step="0.1" value="1" id="saturation" class="form-control-range" oninput="updateSliderValue('saturation', 'saturationValue')" onchange="submitSliderForm('saturation', 'saturation')">
+            </div>
+            <div class="form-group">
+                <label for="vignette">Intensywność winiety: <span id="vignetteValue">1</span></label>
+                <input type="range" min="0.0" max="2.0" step="0.1" value="1" id="vignette" class="form-control-range" oninput="updateSliderValue('vignette', 'vignetteValue')" onchange="submitSliderForm('vignette', 'vignette')">
+            </div>
+        </div>
+
+        <h2 class="mt-5">Dodaj ramkę</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="add_frame">
+            <div class="form-group">
+                <label for="frame_width">Szerokość ramki:</label>
+                <input type="number" name="frame_width" id="frame_width" value="10" min="1" max="100" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="color">Kolor ramki:</label>
+                <input type="color" name="color" id="color" value="#000000" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Dodaj ramkę</button>
+        </form>
+
+        <h2 class="mt-5">Przytnij zdjęcie</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="crop">
+            <div class="form-group">
+                <label for="x">X:</label>
+                <input type="number" name="x" id="x" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="y">Y:</label>
+                <input type="number" name="y" id="y" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="width">Szerokość:</label>
+                <input type="number" name="width" id="width" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="height">Wysokość:</label>
+                <input type="number" name="height" id="height" required class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Przytnij</button>
+        </form>
+
+        <h2 class="mt-5">Przytnij w pionie</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="crop_vertical">
+            <div class="form-group">
+                <label for="top">Górne przycięcie:</label>
+                <input type="number" name="top" id="top" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="bottom">Dolne przycięcie:</label>
+                <input type="number" name="bottom" id="bottom" required class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Przytnij w pionie</button>
+        </form>
+
+        <h2 class="mt-5">Przytnij w poziomie</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="crop_horizontal">
+            <div class="form-group">
+                <label for="left">Lewe przycięcie:</label>
+                <input type="number" name="left" id="left" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="right">Prawe przycięcie:</label>
+                <input type="number" name="right" id="right" required class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Przytnij w poziomie</button>
+        </form>
+
+        <h2 class="mt-5">Obróć zdjęcie</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="rotate">
+            <div class="form-group">
+                <label for="angle">Kąt:</label>
+                <input type="number" name="angle" id="angle" step="0.1" required class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Obróć</button>
+        </form>
+
+        <h2 class="mt-5">Obróć zdjęcie w pionie</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="flip_vertical">
+            <button type="submit" class="btn btn-primary">Obróć w pionie</button>
+        </form>
+
+        <h2 class="mt-5">Obróć zdjęcie w poziomie</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="flip_horizontal">
+            <button type="submit" class="btn btn-primary">Obróć w poziomie</button>
+        </form>
+
+        <h2 class="mt-5">Zmień rozmiar zdjęcia</h2>
+        <form action="" method="post" class="mt-3">
+            <input type="hidden" name="action" value="resize">
+            <div class="form-group">
+                <label for="size">Wybierz rozmiar:</label>
+                <select name="size" id="size" class="form-control">
+                    <option value="9x13">9×13 cm – 1051×1535 px</option>
+                    <option value="10x15">10×15 cm – 1205×1795 px</option>
+                    <option value="13x18">13×18 cm – 1500×2102 px</option>
+                    <option value="15x21">15×21 cm – 1795×2551 px</option>
+                    <option value="20x30">20×30 cm – 2480×3508 px</option>
+                    <option value="25x25">25×25 cm – 3000×4500 px</option>
+                    <option value="25x38">25×38 cm – 3012×4512 px</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Zmień rozmiar</button>
+        </form>
+
+        <h2 class="mt-5">Pobierz zdjęcie</h2>
+        <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-success mt-3">Pobierz edytowane zdjęcie</a>
+        
+        <a href="/" class="btn btn-secondary mt-3">Prześlij kolejne zdjęcie</a>
+        <a href="/" class="btn btn-secondary mt-3">Powrót do strony głównej</a>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            var image = document.getElementById('image');
+            var cropper;
+
+            document.getElementById('startCropButton').addEventListener('click', function () {
+                if (cropper) {
+                    cropper.destroy();
+                }
+                cropper = new Cropper(image, {
+                    aspectRatio: NaN,
+                    viewMode: 1,
+                });
+                document.getElementById('saveCropButton').style.display = 'inline';
+            });
+
+            document.getElementById('saveCropButton').addEventListener('click', function () {
+                var cropData = cropper.getData();
+                document.getElementById('cropX').value = cropData.x;
+                document.getElementById('cropY').value = cropData.y;
+                document.getElementById('cropWidth').value = cropData.width;
+                document.getElementById('cropHeight').value = cropData.height;
+
+                console.log("Sending crop data:", {
+                    x: cropData.x,
+                    y: cropData.y,
+                    width: cropData.width,
+                    height: cropData.height
+                });
+
+                document.getElementById('cropForm').submit();
+            });
+        });
+
+        function updateSliderValue(sliderId, valueId) {
+            const slider = document.getElementById(sliderId);
+            const value = document.getElementById(valueId);
+            value.innerText = slider.value;
+        }
+
+        function submitSliderForm(sliderId, action) {
+            const slider = document.getElementById(sliderId);
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '';
+
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = action;
+            form.appendChild(actionInput);
+
+            const intensityInput = document.createElement('input');
+            intensityInput.type = 'hidden';
+            intensityInput.name = 'intensity';
+            intensityInput.value = slider.value;
+            form.appendChild(intensityInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+</body>
+</html>

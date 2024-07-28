@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Prześlij zdjęcie</h1>
+    <form action="" method="post" enctype="multipart/form-data" class="mt-4">
+        <div class="form-group">
+            <input type="file" name="file" class="form-control-file" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Prześlij</button>
+    </form>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Powrót</a>
+</div>
+{% endblock %}

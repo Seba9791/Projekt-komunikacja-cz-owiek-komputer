@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Photo Editor</h1>
+    <div class="text-center mt-4">
+        <a href="{{ url_for('upload_file') }}" class="btn btn-primary">Prześlij zdjęcie</a>
+        <a href="{{ url_for('login') }}" class="btn btn-secondary">Zaloguj się</a>
+        <a href="{{ url_for('register') }}" class="btn btn-secondary">Zarejestruj się</a>
+    </div>
+
+    {% if drafts %}
+    <h2 class="mt-5">Wersje robocze</h2>
+    <ul class="list-group mt-3">
+        {% for draft in drafts %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ draft.name }}
+            <a href="{{ url_for('load_draft', draft_id=draft.id) }}" class="btn btn-info btn-sm">Edytuj</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endblock %}
